@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meals/models/meal_model.dart';
+import 'package:meals/widget/meal__item_widget.dart';
 
 class MealScreen extends StatelessWidget {
   const MealScreen({
@@ -17,17 +18,25 @@ class MealScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
       ),
-      body: meals == null ?
-        const Center(
+      body: meals.isEmpty ?
+        Center(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Uh Oh....Nothing Here'),
-              SizedBox(
+              Text(
+                'Uh Oh....Nothing Here',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                  color: Theme.of(context).colorScheme.onBackground
+                ),
+              ),
+              const SizedBox(
                 height: 20,
               ),
               Text(
-                'Try new something delicious'
+                'Try new something delicious',
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground
+                ),
               )
             ],
           ),
@@ -35,7 +44,7 @@ class MealScreen extends StatelessWidget {
         ListView.builder(
           itemCount: meals.length,
             itemBuilder: (ctx,index){
-            return Text(meals[index].title);
+            return MealItemWidget(meal: meals[index]);
             }
         )
       ,
