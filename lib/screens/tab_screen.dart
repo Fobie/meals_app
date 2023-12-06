@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:meals/data/category_data.dart';
 import 'package:meals/models/meal_model.dart';
 import 'package:meals/screens/categories_screen.dart';
+import 'package:meals/screens/filter_screen.dart';
 import 'package:meals/screens/meal_screen.dart';
 import 'package:meals/widget/drawer_widget.dart';
+
+const kInitialValues = {
+  Filter.glutenFree : false,
+  Filter.lactoseFree : false,
+  Filter.vegetarian : false,
+  Filter.vegan : false
+};
 
 class TabScreen extends StatefulWidget {
   const TabScreen({super.key});
@@ -15,6 +24,7 @@ class _TabScreenState extends State<TabScreen> {
 
   int selectedScreenIndex = 0;
   final List<Meal> favouriteMeal = [];
+  Map<Filter, bool> selectedMeals = kInitialValues;
 
   void showMessage(String message){
     ScaffoldMessenger.of(context).showSnackBar(
@@ -54,11 +64,14 @@ class _TabScreenState extends State<TabScreen> {
     });
 }
 
-  void setScreen(String identifier) {
+  void setScreen(String identifier) async {
+    Navigator.of(context).pop();
     if(identifier == "filters"){
+      final result = await Navigator.of(context).push<Map<Filter, bool>>(MaterialPageRoute(builder: (ctx) => FilterScreen(currentFilters: selectedMeals,)));
 
-    } else {
-      Navigator.of(context).pop();
+      setState(() {
+        selectedMeals = result ?? kInitialValues;
+      });
     }
   }
 
@@ -67,7 +80,26 @@ class _TabScreenState extends State<TabScreen> {
   @override
   Widget build(BuildContext context) {
 
-  Widget activeScreen = CategoriesScreen(onToggleFavouriteMeal: (Meal meal) { ToggleFavouriteMeal(meal); },);
+    final availableMeals = dummyMeals.where((meal){
+      if(selectedMeals[Filter.glutenFree]! && !meal.isGlutenFree){
+        return false;
+      }
+      if(selectedMeals[Filter.lactoseFree]! && !meal.isLactoseFree){
+        return false;
+      }
+      if(selectedMeals[Filter.vegetarian]! && !meal.isVegetarian){
+        return false;
+      }
+      if(selectedMeals[Filter.vegan]! && !meal.isVegan){
+        return false;
+      }
+      return true;
+    }).toList();
+
+  Widget activeScreen = CategoriesScreen(
+    onToggleFavouriteMeal: ToggleFavouriteMeal,
+    availableMeals: availableMeals,
+  );
   String activeScreenTitle = "Categories";
   if(selectedScreenIndex == 1){
     activeScreen = MealScreen(meals: favouriteMeal, onToggleFavouriteMeal: (Meal meal) { ToggleFavouriteMeal(meal); },);
