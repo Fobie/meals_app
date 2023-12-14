@@ -1,35 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meals/const/strings.dart';
+import 'package:meals/provider/favourite_provider.dart';
 
 import '../models/meal_model.dart';
 
-class MealDetailScreen extends StatelessWidget {
+class MealDetailScreen extends ConsumerWidget {
   const MealDetailScreen({
     super.key,
     required this.meal,
-    required this.onToggleFavouriteMeal});
+  });
 
   final Meal meal;
-  final void Function(Meal meal) onToggleFavouriteMeal;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final favouriteMeal = ref.watch(favouriteMealProvider);
+    final isFavourite = favouriteMeal.contains(meal);
     return Scaffold(
       appBar: AppBar(
         title: Text(meal.title),
         actions: [
           IconButton(
               onPressed: (){
-                onToggleFavouriteMeal(meal);
+                final wasAdded = ref.read(favouriteMealProvider.notifier).toggleMealFavouriteStatus(meal);
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                        wasAdded ? "Successfully added to favourite" : "Successfully removed from favourite"
+                      )
+                  )
+                );
               },
-              icon: Icon(Icons.star)
+              icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (child, animation){
+                    return RotationTransition(
+                        turns: Tween<double>(
+                          begin: 0.8,
+                          end: 1
+                        ).animate(animation),
+                      child: child,
+                    );
+                  },
+                  child: Icon(isFavourite ? Icons.star : Icons.star_border,key: ValueKey(isFavourite),),
+              )
           )
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Image.network(meal.imageUrl),
+            Hero(tag: meal.id,
+            child: Image.network(meal.imageUrl)),
             const SizedBox(
               height: 10,
             ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:meals/data/category_data.dart';
-import 'package:meals/models/meal_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meals/provider/favourite_provider.dart';
+import 'package:meals/provider/filter_provider.dart';
+import 'package:meals/provider/meal_provider.dart';
 import 'package:meals/screens/categories_screen.dart';
 import 'package:meals/screens/filter_screen.dart';
 import 'package:meals/screens/meal_screen.dart';
 import 'package:meals/widget/drawer_widget.dart';
+
 
 const kInitialValues = {
   Filter.glutenFree : false,
@@ -13,50 +16,18 @@ const kInitialValues = {
   Filter.vegan : false
 };
 
-class TabScreen extends StatefulWidget {
+class TabScreen extends ConsumerStatefulWidget {
   const TabScreen({super.key});
 
   @override
-  State<TabScreen> createState() => _TabScreenState();
+  ConsumerState<TabScreen> createState() => _TabScreenState();
 }
 
-class _TabScreenState extends State<TabScreen> {
+class _TabScreenState extends ConsumerState<TabScreen> {
 
   int selectedScreenIndex = 0;
-  final List<Meal> favouriteMeal = [];
-  Map<Filter, bool> selectedMeals = kInitialValues;
 
-  void showMessage(String message){
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            style: TextStyle(
-                color: Colors.white
-            ),
-          ),
-          backgroundColor: Colors.deepOrangeAccent,
-          elevation: 10,
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(5),
-        )
-    );
-  }
 
-  void ToggleFavouriteMeal(Meal meal){
-    final isExisting = favouriteMeal.contains(meal);
-    if(isExisting){
-      setState(() {
-        favouriteMeal.remove(meal);
-        showMessage('Removed from your favourites!');
-      });
-    } else {
-      setState(() {
-        favouriteMeal.add(meal);
-        showMessage('Added to your favourites successfully');
-      });
-    }
-  }
 
   void selectScreen(int index){
     setState(() {
@@ -67,11 +38,12 @@ class _TabScreenState extends State<TabScreen> {
   void setScreen(String identifier) async {
     Navigator.of(context).pop();
     if(identifier == "filters"){
-      final result = await Navigator.of(context).push<Map<Filter, bool>>(MaterialPageRoute(builder: (ctx) => FilterScreen(currentFilters: selectedMeals,)));
-
-      setState(() {
-        selectedMeals = result ?? kInitialValues;
-      });
+     await Navigator.of(context).push<Map<Filter, bool>>(
+          MaterialPageRoute(
+              builder: (ctx) =>const FilterScreen(
+              )
+          )
+      );
     }
   }
 
@@ -80,30 +52,33 @@ class _TabScreenState extends State<TabScreen> {
   @override
   Widget build(BuildContext context) {
 
-    final availableMeals = dummyMeals.where((meal){
-      if(selectedMeals[Filter.glutenFree]! && !meal.isGlutenFree){
+    final meals = ref.watch(mealProvider);
+    final activeFilters = ref.watch(filterProvider);
+    final availableMeals = meals.where((meal){
+      if(activeFilters[Filter.glutenFree]! && !meal.isGlutenFree){
         return false;
       }
-      if(selectedMeals[Filter.lactoseFree]! && !meal.isLactoseFree){
+      if(activeFilters[Filter.lactoseFree]! && !meal.isLactoseFree){
         return false;
       }
-      if(selectedMeals[Filter.vegetarian]! && !meal.isVegetarian){
+      if(activeFilters[Filter.vegetarian]! && !meal.isVegetarian){
         return false;
       }
-      if(selectedMeals[Filter.vegan]! && !meal.isVegan){
+      if(activeFilters[Filter.vegan]! && !meal.isVegan){
         return false;
       }
       return true;
     }).toList();
 
   Widget activeScreen = CategoriesScreen(
-    onToggleFavouriteMeal: ToggleFavouriteMeal,
     availableMeals: availableMeals,
   );
   String activeScreenTitle = "Categories";
   if(selectedScreenIndex == 1){
-    activeScreen = MealScreen(meals: favouriteMeal, onToggleFavouriteMeal: (Meal meal) { ToggleFavouriteMeal(meal); },);
-    activeScreenTitle = "Favourites";
+    final _favouriteMeals = ref.watch(favouriteMealProvider);
+    activeScreen = MealScreen(
+      meals: _favouriteMeals
+    );
 }
 
 
